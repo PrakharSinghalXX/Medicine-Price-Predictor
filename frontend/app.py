@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.express as px
 
 
-url = "http://127.0.0.1:8000"
+url = "https://medicine-price-backend.onrender.com"
 
 st.set_page_config(
     page_title="Medicine Price Predictor",
