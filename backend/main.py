@@ -5,19 +5,11 @@ import numpy as np
 import joblib
 import sqlite3
 
-# -----------------------------
+
 # FastAPI App
-# -----------------------------
+app = FastAPI(title="Medicine Price Predictor API",description="Backend for Medicine Price Prediction using FastAPI")
 
-app = FastAPI(
-    title="Medicine Price Predictor API",
-    description="Backend for Medicine Price Prediction using FastAPI"
-)
-
-# -----------------------------
 # CORS
-# -----------------------------
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -26,49 +18,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# -----------------------------
 # Load Model
-# -----------------------------
-
 model = joblib.load("medicine_price_model.pkl")
 
-# -----------------------------
 # SQLite Connection
-# -----------------------------
-
-conn = sqlite3.connect(
-    "medicine.db",
-    check_same_thread=False
-)
+conn = sqlite3.connect("medicine.db",check_same_thread=False)
 
 # 99th percentile threshold
 threshold = 2899.32
 
-# -----------------------------
 # Home
-# -----------------------------
-
 @app.get("/")
 def home():
-    return {
-        "message": "Medicine Price Prediction API",
-        "status": "Running"
-    }
+    return {"message": "Medicine Price Prediction API","status": "Running"}
 
-# -----------------------------
+
 # Predict Price
-# -----------------------------
-
 @app.get("/predict-price")
 def predict_medicine_price(brand_name: str):
 
     try:
 
         if not brand_name.strip():
-            raise HTTPException(
-                status_code=400,
-                detail="Medicine name cannot be empty."
-            )
+            raise HTTPException(status_code=400,detail="Medicine name cannot be empty.")
 
         medicine = pd.read_sql_query(
             """
@@ -83,56 +55,32 @@ def predict_medicine_price(brand_name: str):
         )
 
         if medicine.empty:
-            raise HTTPException(
-                status_code=404,
-                detail=f"{brand_name} not found."
-            )
+            raise HTTPException(status_code=404,detail=f"{brand_name} not found.")
 
         if medicine["price_inr"].iloc[0] > threshold:
-            raise HTTPException(
-                status_code=400,
-                detail="This medicine belongs to the top 1% price range and is not supported by the prediction model."
-            )
+            raise HTTPException(status_code=400,detail="This medicine belongs to the top 1% price range and is not supported by the prediction model.")
 
-        X = medicine.drop(
-            columns=[
-                "price_inr",
-                "brand_name"
-            ]
-        )
+        X = medicine.drop(columns=["price_inr","brand_name"])
 
-        predicted_price = np.expm1(
-            model.predict(X)[0]
-        ).round(2)
+        predicted_price = np.expm1(model.predict(X)[0]).round(2)
 
-        return {
-            "brand_name": str(medicine["brand_name"].iloc[0]),
-            "predicted_price": float(predicted_price)
-        }
+        return {"brand_name": str(medicine["brand_name"].iloc[0]),"predicted_price": float(predicted_price)}
 
     except HTTPException:
         raise
 
     except Exception:
-        raise HTTPException(
-            status_code=500,
-            detail="Prediction Failed."
-        )
+        raise HTTPException(status_code=500,detail="Prediction Failed.")
 
-# -----------------------------
+
 # Alternatives
-# -----------------------------
-
 @app.get("/alternatives")
 def alternatives(brand_name: str):
 
     try:
 
         if not brand_name.strip():
-            raise HTTPException(
-                status_code=400,
-                detail="Medicine name cannot be empty."
-            )
+            raise HTTPException(status_code=400,detail="Medicine name cannot be empty.")
 
         medicine = pd.read_sql_query(
             """
@@ -147,16 +95,8 @@ def alternatives(brand_name: str):
         )
 
         if medicine.empty:
-            raise HTTPException(
-                status_code=404,
-                detail=f"{brand_name} not found."
-            )
+            raise HTTPException(status_code=404,detail=f"{brand_name} not found.")
 
-        # IMPORTANT: cast pandas/numpy types to native Python types.
-        # sqlite3's parameter binding does not reliably match numpy.int64
-        # against INTEGER columns -- it silently returns zero rows instead
-        # of raising an error, which was causing "no alternatives found"
-        # even when matching rows existed in the table.
         composition = int(medicine["cleaned_composition"].iloc[0])
         current_brand = str(medicine["brand_name"].iloc[0])
 
@@ -166,22 +106,17 @@ def alternatives(brand_name: str):
             FROM medicines
             WHERE cleaned_composition = ?
               AND brand_name != ?
-            ORDER BY price_inr DESC
+            ORDER BY price_inr ASC
             LIMIT 5
             """,
             conn,
             params=[composition, current_brand]
         )
 
-        return {
-            "alternatives": alternatives_df.to_dict(orient="records")
-        }
+        return {"alternatives": alternatives_df.to_dict(orient="records")}
 
     except HTTPException:
         raise
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=500,detail=str(e))
