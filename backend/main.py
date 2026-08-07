@@ -166,7 +166,7 @@ def alternatives(brand_name: str):
             FROM medicines
             WHERE cleaned_composition = ?
               AND brand_name != ?
-            ORDER BY price_inr ASC
+            ORDER BY price_inr DESC
             LIMIT 5
             """,
             conn,
