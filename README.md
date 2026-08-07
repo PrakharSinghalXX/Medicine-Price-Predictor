@@ -6,6 +6,8 @@ An app that predicts the "fair price" of a medicine using a trained ML model (Ra
 ## Approach
 
 - **Data Cleanining/Preprocessing:**  Fixed null values and made a new uniform column for composition--'cleaned_composition'.
+- **cleaned_composition:** Removed unnecessary characters like**( ) , / ** and replaced them with either no space or one space. Then split the composition using split() then joined the split words with apply function in alphabetical order.
+
 - **Outliers:** The mean of price of medicines was Rs 270.5, however there were outliers whose price was capped at Rs 4,36,000.
 - **Model Training:** Used a Random Forest Regressor on the whole dataset while using appropriate hyperparameters however the r2_score was too low and then reduced the model training and testing data to the 99 percentile dataset.
 
