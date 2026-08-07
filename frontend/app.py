@@ -6,17 +6,7 @@ import plotly.express as px
 
 url = "https://medicine-price-backend.onrender.com"
 
-# Fire a background wake-up ping as soon as the app loads
-try:
-    requests.get(f"{url}/", timeout=5)
-except requests.exceptions.RequestException:
-    pass  # ignore — this is just a best-effort wake-up ping, not a real check
-
-st.set_page_config(
-    page_title="Medicine Price Predictor",
-    page_icon="💊",
-    layout="wide"
-)
+st.set_page_config(page_title="Medicine Price Predictor",page_icon="💊",layout="wide")
 
 
 # Title
